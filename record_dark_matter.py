@@ -41,20 +41,22 @@ FINAL_VIDEO   = OUTPUT_DIR / "dark_matter_recording.mp4"
 
 # Binary paths — resolved automatically; no manual config needed.
 def _find_ffmpeg() -> str:
-    candidates = [
-        # Remote cloud environment (Linux)
-        "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux",
-        # Playwright-bundled ffmpeg on macOS arm64
-        Path.home() / "Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac-arm64",
-        # Playwright-bundled ffmpeg on macOS x86
-        Path.home() / "Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac",
-        # Playwright-bundled ffmpeg on Linux (user cache)
-        Path.home() / ".cache/ms-playwright/ffmpeg-1011/ffmpeg-linux",
-    ]
-    for p in candidates:
-        if Path(p).exists():
-            return str(p)
-    return "ffmpeg"  # fall back to PATH
+    # 1. imageio-ffmpeg bundles a full H.264-capable ffmpeg — preferred on macOS
+    try:
+        import imageio_ffmpeg  # type: ignore
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe:
+            return exe
+    except Exception:
+        pass
+
+    # 2. Remote cloud environment (Linux, pre-installed full build)
+    remote = "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux"
+    if Path(remote).exists():
+        return remote
+
+    # 3. System PATH (works if user installed ffmpeg via Homebrew/apt/etc.)
+    return "ffmpeg"
 
 _REMOTE_CHROMIUM = "/opt/pw-browsers/chromium"
 CHROMIUM_BIN  = _REMOTE_CHROMIUM if Path(_REMOTE_CHROMIUM).exists() else ""
