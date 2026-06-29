@@ -3,7 +3,24 @@
 Dark Matter Creative Agency — Playwright screen recorder
 Resolution : 1080 × 1920  (portrait / Instagram Reels)
 Output     : dark_matter_recording.mp4 @ 60 fps, H.264
-Usage      : python3 record_dark_matter.py
+
+Setup (one-time):
+    pip install playwright
+    playwright install chromium          # or: playwright install --with-deps chromium
+
+Run:
+    python3 record_dark_matter.py
+
+Output is written to ./dark_matter_output/dark_matter_recording.mp4
+
+Requirements:
+    - Python 3.10+
+    - playwright  (pip install playwright)
+    - ffmpeg      (brew install ffmpeg  /  apt install ffmpeg  /  choco install ffmpeg)
+
+Note: CHROMIUM_BIN / FFMPEG_BIN below point to the pre-installed binaries in the
+Claude Code remote environment. On a local machine, set both to "" to let
+Playwright and ffmpeg be found on PATH automatically.
 """
 
 import asyncio
@@ -22,9 +39,12 @@ OUTPUT_DIR    = Path("./dark_matter_output")
 RAW_VIDEO_DIR = OUTPUT_DIR / "raw"
 FINAL_VIDEO   = OUTPUT_DIR / "dark_matter_recording.mp4"
 
-# Pre-installed binaries inside the remote environment
-CHROMIUM_BIN  = "/opt/pw-browsers/chromium"
-FFMPEG_BIN    = "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux"
+# Binary paths — override these if playwright/ffmpeg aren't on PATH.
+# Set to "" to fall back to PATH lookup (normal local machine usage).
+_REMOTE_CHROMIUM = "/opt/pw-browsers/chromium"
+_REMOTE_FFMPEG   = "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux"
+CHROMIUM_BIN  = _REMOTE_CHROMIUM if Path(_REMOTE_CHROMIUM).exists() else ""
+FFMPEG_BIN    = _REMOTE_FFMPEG   if Path(_REMOTE_FFMPEG).exists()   else "ffmpeg"
 
 # ── Easing kernel (cubic ease-in-out) ─────────────────────────────────────────
 # Injected as inline JS so scroll animations run at browser frame rate (~60 fps).
@@ -390,9 +410,12 @@ async def main() -> None:
 
     print("Launching browser …")
     async with async_playwright() as pw:
+        launch_kwargs = dict(headless=True)
+        if CHROMIUM_BIN:
+            launch_kwargs["executable_path"] = CHROMIUM_BIN
+
         browser = await pw.chromium.launch(
-            executable_path=CHROMIUM_BIN,
-            headless=True,
+            **launch_kwargs,
             args=[
                 "--headless=new",
                 "--no-sandbox",
