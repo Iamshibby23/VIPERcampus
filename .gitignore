@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+*.pyo
+dark_matter_output/
