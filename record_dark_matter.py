@@ -39,12 +39,26 @@ OUTPUT_DIR    = Path("./dark_matter_output")
 RAW_VIDEO_DIR = OUTPUT_DIR / "raw"
 FINAL_VIDEO   = OUTPUT_DIR / "dark_matter_recording.mp4"
 
-# Binary paths — override these if playwright/ffmpeg aren't on PATH.
-# Set to "" to fall back to PATH lookup (normal local machine usage).
+# Binary paths — resolved automatically; no manual config needed.
+def _find_ffmpeg() -> str:
+    candidates = [
+        # Remote cloud environment (Linux)
+        "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux",
+        # Playwright-bundled ffmpeg on macOS arm64
+        Path.home() / "Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac-arm64",
+        # Playwright-bundled ffmpeg on macOS x86
+        Path.home() / "Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac",
+        # Playwright-bundled ffmpeg on Linux (user cache)
+        Path.home() / ".cache/ms-playwright/ffmpeg-1011/ffmpeg-linux",
+    ]
+    for p in candidates:
+        if Path(p).exists():
+            return str(p)
+    return "ffmpeg"  # fall back to PATH
+
 _REMOTE_CHROMIUM = "/opt/pw-browsers/chromium"
-_REMOTE_FFMPEG   = "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux"
 CHROMIUM_BIN  = _REMOTE_CHROMIUM if Path(_REMOTE_CHROMIUM).exists() else ""
-FFMPEG_BIN    = _REMOTE_FFMPEG   if Path(_REMOTE_FFMPEG).exists()   else "ffmpeg"
+FFMPEG_BIN    = _find_ffmpeg()
 
 # ── Easing kernel (cubic ease-in-out) ─────────────────────────────────────────
 # Injected as inline JS so scroll animations run at browser frame rate (~60 fps).
